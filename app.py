@@ -1,23 +1,8 @@
 import streamlit as st
-import openai
-from dotenv import load_dotenv
-import os
+from agent.essay_agent import EssayAgent
 
-# Load environment variables
-load_dotenv()
-
-# Configure OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-# Default system prompt
-DEFAULT_SYSTEM_PROMPT = """You are an expert essay writing tutor. Your role is to help students improve their essay writing skills by:
-1. Providing constructive feedback on their writing
-2. Suggesting improvements for structure, clarity, and argumentation
-3. Explaining writing concepts and techniques
-4. Helping with thesis development and organization
-5. Offering tips for better research and citation
-
-Always maintain a supportive and encouraging tone while providing specific, actionable advice."""
+# Initialize essay agent
+essay_agent = EssayAgent()
 
 # Initialize session state for chat history
 if "messages" not in st.session_state:
@@ -25,7 +10,7 @@ if "messages" not in st.session_state:
 
 # Initialize session state for system prompt
 if "system_prompt" not in st.session_state:
-    st.session_state.system_prompt = DEFAULT_SYSTEM_PROMPT
+    st.session_state.system_prompt = essay_agent.default_system_prompt
 
 # Sidebar for system prompt editing
 with st.sidebar:
@@ -40,6 +25,7 @@ with st.sidebar:
         st.success("System prompt updated!")
     
     st.markdown("---")
+    st.markdown(f"### Current Model: {essay_agent.model}")
     st.markdown("""
     ### Instructions
     1. Enter your essay or writing question in the chat
@@ -69,22 +55,16 @@ if prompt := st.chat_input("Ask about essay writing or share your essay for feed
         full_response = ""
         
         try:
-            # Create messages list with system prompt and chat history
-            messages = [{"role": "system", "content": st.session_state.system_prompt}]
-            messages.extend(st.session_state.messages)
-            
-            # Get response from OpenAI
-            response = openai.chat.completions.create(
-                model="gpt-4-turbo-preview",
-                messages=messages,
-                stream=True
+            # Get response from essay agent
+            response_generator = essay_agent.get_response(
+                messages=st.session_state.messages,
+                system_prompt=st.session_state.system_prompt
             )
             
             # Stream the response
-            for chunk in response:
-                if chunk.choices[0].delta.content is not None:
-                    full_response += chunk.choices[0].delta.content
-                    message_placeholder.markdown(full_response + "▌")
+            for chunk in response_generator:
+                full_response += chunk
+                message_placeholder.markdown(full_response + "▌")
             
             message_placeholder.markdown(full_response)
             

@@ -1,0 +1,100 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Essay Writing Tutor API",
+    "version": "1.0.0",
+    "description": "API for essay writing assistance using OpenAI"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/chat": {
+      "post": {
+        "summary": "Get essay writing assistance",
+        "description": "Send a message to get AI-powered essay writing help",
+        "operationId": "chat",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": ["user", "assistant", "system"]
+                        },
+                        "content": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["role", "content"]
+                    }
+                  },
+                  "system_prompt": {
+                    "type": "string",
+                    "description": "Optional custom system prompt to override the default one"
+                  }
+                },
+                "required": ["messages"]
+              },
+              "example": {
+                "messages": [
+                  {
+                    "role": "user",
+                    "content": "How do I write a good thesis statement?"
+                  }
+                ],
+                "system_prompt": "You are a thesis statement expert. Focus only on thesis statements."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "response": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "response": "A good thesis statement should be clear, concise, and arguable..."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} 
