@@ -7,7 +7,7 @@ class EssayAgent:
     def __init__(self):
         load_dotenv()
         openai.api_key = os.getenv("OPENAI_API_KEY")
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4-turbo-preview")
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         self.default_system_prompt = """You are an expert essay writing tutor. Your role is to help students improve their essay writing skills by:
 1. Providing constructive feedback on their writing
 2. Suggesting improvements for structure, clarity, and argumentation
