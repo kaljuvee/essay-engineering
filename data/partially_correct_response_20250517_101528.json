@@ -1,0 +1,11 @@
+{
+  "timestamp": "2025-05-17T10:15:28.062999",
+  "model": "gpt-4o",
+  "interactions": [
+    {
+      "step": "partially_correct_response",
+      "input": "\n    The Mole had been working very hard all the morning, spring-cleaning his little home.\n    ",
+      "response": "You've identified some meaning blocks correctly, but you missed a few. Here are the correct blocks:\n1. 'The Mole had been working very hard'\n2. 'all the morning'\n3. 'spring-cleaning his little home'\n\nKeep practicing to improve your understanding!"
+    }
+  ]
+}

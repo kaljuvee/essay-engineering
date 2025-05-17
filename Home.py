@@ -8,32 +8,6 @@ essay_agent = EssayAgent()
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Initialize session state for system prompt
-if "system_prompt" not in st.session_state:
-    st.session_state.system_prompt = essay_agent.default_system_prompt
-
-# Sidebar for system prompt editing
-with st.sidebar:
-    st.title("Essay Writing Tutor Settings")
-    st.text_area("System Prompt", 
-                 value=st.session_state.system_prompt,
-                 height=300,
-                 key="system_prompt_input")
-    
-    if st.button("Update System Prompt"):
-        st.session_state.system_prompt = st.session_state.system_prompt_input
-        st.success("System prompt updated!")
-    
-    st.markdown("---")
-    st.markdown(f"### Current Model: {essay_agent.model}")
-    st.markdown("""
-    ### Instructions
-    1. Enter your essay or writing question in the chat
-    2. Get personalized feedback and guidance
-    3. Ask follow-up questions for clarification
-    4. Use the system prompt to customize the tutor's behavior
-    """)
-
 # Main chat interface
 st.title("Essay Writing Tutor")
 
@@ -41,6 +15,67 @@ st.title("Essay Writing Tutor")
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+
+# Instructions for meaning blocks and reconstruction
+st.markdown("""
+### Understanding Meaning Blocks and Reconstruction
+
+**Meaning Blocks:**
+- Meaning blocks are the core ideas or phrases in a text that carry significant information.
+- Breaking down a text into meaning blocks helps you understand its structure and key points.
+- Example: In the sentence "The Mole had been working very hard all the morning, spring-cleaning his little home," the meaning blocks are:
+  1. "The Mole had been working very hard"
+  2. "all the morning"
+  3. "spring-cleaning his little home"
+
+**Reconstruction of Meaning:**
+- Reconstruction involves paraphrasing each meaning block to ensure you understand the text deeply.
+- This process helps you internalize the text's nuances and improve your comprehension.
+- Example: "The Mole had been working very hard" can be reconstructed as "The character was exerting significant effort."
+
+Use the buttons below to practice identifying meaning blocks and reconstructing their meaning.
+""")
+
+# Starting conversation buttons
+st.markdown("### Start a Conversation")
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("Identify Meaning Blocks"):
+        st.session_state.messages.append({"role": "user", "content": "Please identify the meaning blocks in this text: 'The Mole had been working very hard all the morning, spring-cleaning his little home.'"})
+        with st.chat_message("user"):
+            st.markdown(st.session_state.messages[-1]["content"])
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            full_response = ""
+            try:
+                response_generator = essay_agent.get_response(messages=st.session_state.messages, system_prompt=essay_agent.default_system_prompt)
+                for chunk in response_generator:
+                    full_response += chunk
+                    message_placeholder.markdown(full_response + "▌")
+                message_placeholder.markdown(full_response)
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}")
+                st.info("Please check your OpenAI API key and try again.")
+
+with col2:
+    if st.button("Reconstruct Meaning"):
+        st.session_state.messages.append({"role": "user", "content": "Please reconstruct the meaning of this block: 'The Mole had been working very hard all the morning, spring-cleaning his little home.'"})
+        with st.chat_message("user"):
+            st.markdown(st.session_state.messages[-1]["content"])
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            full_response = ""
+            try:
+                response_generator = essay_agent.get_response(messages=st.session_state.messages, system_prompt=essay_agent.default_system_prompt)
+                for chunk in response_generator:
+                    full_response += chunk
+                    message_placeholder.markdown(full_response + "▌")
+                message_placeholder.markdown(full_response)
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}")
+                st.info("Please check your OpenAI API key and try again.")
 
 # Chat input
 if prompt := st.chat_input("Ask about essay writing or share your essay for feedback"):
@@ -58,7 +93,7 @@ if prompt := st.chat_input("Ask about essay writing or share your essay for feed
             # Get response from essay agent
             response_generator = essay_agent.get_response(
                 messages=st.session_state.messages,
-                system_prompt=st.session_state.system_prompt
+                system_prompt=essay_agent.default_system_prompt
             )
             
             # Stream the response

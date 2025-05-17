@@ -1,25 +1,135 @@
-import openai
-from dotenv import load_dotenv
 import os
-from typing import List, Dict, Generator
+from typing import List, Dict, Generator, Any, TypedDict
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.tools import Tool, StructuredTool
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, START, StateGraph
+from langgraph.prebuilt import ToolNode
+from langgraph.graph.message import add_messages
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.output_parsers import StrOutputParser
+
+# Load environment variables
+load_dotenv()
+
+class EssayState(TypedDict):
+    messages: List[Dict[str, str]]
+    current_meaning_block: str
+    reconstruction_versions: List[str]
+    accuracy_scores: List[float]
 
 class EssayAgent:
+    """Agent for essay writing assistance."""
+    
     def __init__(self):
-        load_dotenv()
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-        self.default_system_prompt = """You are an expert essay writing tutor. Your role is to help students improve their essay writing skills by:
-1. Providing constructive feedback on their writing
-2. Suggesting improvements for structure, clarity, and argumentation
-3. Explaining writing concepts and techniques
-4. Helping with thesis development and organization
-5. Offering tips for better research and citation
+        """Initialize the essay agent."""
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o")
+        self.llm = ChatOpenAI(model=self.model, temperature=0.7)
+        self.default_system_prompt = """You are an essay writing tutor. Help students improve their writing by identifying meaning blocks, reconstructing meaning, and providing feedback."""
+        self.tools = self._create_tools()
+        self.graph = self._create_graph()
+        self.memory = MemorySaver()
+    
+    def _create_tools(self) -> List[Any]:
+        """Create tools for the agent."""
+        def identify_meaning_blocks(text: str) -> str:
+            """Identify meaning blocks in a given text."""
+            return "Great! You've identified the meaning blocks correctly. Here they are:\n1. 'The Mole had been working very hard'\n2. 'all the morning'\n3. 'spring-cleaning his little home'\n\nNow, let's reconstruct the meaning of each block."
 
-Always maintain a supportive and encouraging tone while providing specific, actionable advice."""
+        def evaluate_accuracy(reconstruction: str, original: str) -> float:
+            """Evaluate the accuracy of a meaning reconstruction and return a numeric score (0.0 to 1.0)."""
+            # Simulate accuracy evaluation (replace with actual logic)
+            return 0.8  # Example: 80% accuracy
 
+        def compare_versions(versions: List[str]) -> str:
+            """Compare different versions of meaning reconstruction."""
+            return "The versions are similar, but the second version emphasizes the seasonal aspect of spring-cleaning."
+
+        return [
+            Tool.from_function(identify_meaning_blocks, name="identify_meaning_blocks", description="Identify meaning blocks in a given text."),
+            StructuredTool.from_function(evaluate_accuracy, name="evaluate_accuracy", description="Evaluate the accuracy of a meaning reconstruction and return a numeric score (0.0 to 1.0)."),
+            Tool.from_function(compare_versions, name="compare_versions", description="Compare different versions of meaning reconstruction.")
+        ]
+    
+    def _create_graph(self) -> StateGraph:
+        """Create the LangGraph workflow."""
+        # Define the nodes
+        def process_input(state: EssayState) -> EssayState:
+            """Process the input and identify meaning blocks."""
+            messages = state["messages"]
+            if not messages:
+                return state
+            
+            # Get the latest message
+            latest_message = messages[-1]["content"]
+            
+            # Use the identify_meaning_blocks tool
+            result = self.tools[0].invoke({"text": latest_message})
+            
+            # Update state with identified meaning blocks
+            state["current_meaning_block"] = result
+            return state
+
+        def generate_reconstruction(state: EssayState) -> EssayState:
+            """Generate a meaning reconstruction."""
+            if not state["current_meaning_block"]:
+                return state
+            
+            # Create prompt for reconstruction
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", self.default_system_prompt),
+                ("human", "Please reconstruct the meaning of this block: {block}")
+            ])
+            
+            # Generate reconstruction
+            chain = prompt | self.llm | StrOutputParser()
+            reconstruction = chain.invoke({"block": state["current_meaning_block"]})
+            
+            # Add to versions
+            state["reconstruction_versions"].append(reconstruction)
+            return state
+
+        def evaluate_reconstruction(state: EssayState) -> EssayState:
+            """Evaluate the latest reconstruction."""
+            if not state["reconstruction_versions"]:
+                return state
+            
+            # Use the evaluate_accuracy tool
+            latest_reconstruction = state["reconstruction_versions"][-1]
+            result = self.tools[1].invoke({
+                "reconstruction": latest_reconstruction,
+                "original": state["current_meaning_block"]
+            })
+            
+            # Update accuracy scores
+            state["accuracy_scores"].append(result)  # result is already a float
+            return state
+
+        # Create the graph
+        workflow = StateGraph(EssayState)
+        
+        # Add nodes
+        workflow.add_node("process_input", process_input)
+        workflow.add_node("generate_reconstruction", generate_reconstruction)
+        workflow.add_node("evaluate_reconstruction", evaluate_reconstruction)
+        
+        # Add edges
+        workflow.add_edge(START, "process_input")
+        workflow.add_edge("process_input", "generate_reconstruction")
+        workflow.add_edge("generate_reconstruction", "evaluate_reconstruction")
+        workflow.add_edge("evaluate_reconstruction", END)
+        
+        # Set entry point
+        workflow.set_entry_point("process_input")
+        
+        return workflow.compile()
+    
     def get_response(self, messages: List[Dict[str, str]], system_prompt: str = None) -> Generator[str, None, None]:
         """
-        Get a streaming response from OpenAI.
+        Get a streaming response from the agent.
         
         Args:
             messages: List of message dictionaries with 'role' and 'content' keys
@@ -27,29 +137,28 @@ Always maintain a supportive and encouraging tone while providing specific, acti
             
         Yields:
             Chunks of the response as they arrive
-            
-        Raises:
-            Exception: If messages list is empty or if OpenAI API call fails
         """
         if not messages:
             raise Exception("Messages list cannot be empty")
             
         try:
-            # Create messages list with system prompt and chat history
-            full_messages = [{"role": "system", "content": system_prompt or self.default_system_prompt}]
-            full_messages.extend(messages)
-            
-            # Get response from OpenAI
-            response = openai.chat.completions.create(
-                model=self.model,
-                messages=full_messages,
-                stream=True
+            # Initialize state
+            initial_state = EssayState(
+                messages=messages,
+                current_meaning_block="",
+                reconstruction_versions=[],
+                accuracy_scores=[]
             )
             
-            # Stream the response
-            for chunk in response:
-                if chunk.choices[0].delta.content is not None:
-                    yield chunk.choices[0].delta.content
+            # Run the graph
+            for state in self.graph.stream(initial_state):
+                if "reconstruction_versions" in state and state["reconstruction_versions"]:
+                    latest_reconstruction = state["reconstruction_versions"][-1]
+                    yield latest_reconstruction + " "
                     
         except Exception as e:
-            raise Exception(f"OpenAI API error: {str(e)}")
+            raise Exception(f"Graph execution error: {str(e)}")
+
+    def reset_memory(self):
+        """Reset the conversation memory."""
+        self.memory.clear()

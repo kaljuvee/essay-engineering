@@ -1,0 +1,31 @@
+{
+  "timestamp": "2025-05-17T10:15:27.952486",
+  "model": "gpt-4o",
+  "interactions": [
+    {
+      "step": "user",
+      "input": "Let's work on understanding this text: 'The Mole had been working very hard all the morning, spring-cleaning his little home.'",
+      "response": "Great! You're on the right track. Keep practicing to improve your understanding."
+    },
+    {
+      "step": "assistant",
+      "input": "I'll help you break this down into meaning blocks and reconstruct the meaning.",
+      "response": "Great! You're on the right track. Keep practicing to improve your understanding."
+    },
+    {
+      "step": "user",
+      "input": "What are the meaning blocks in this sentence?",
+      "response": "Great! You're on the right track. Keep practicing to improve your understanding."
+    },
+    {
+      "step": "user",
+      "input": "Now, let's reconstruct the first meaning block.",
+      "response": "Great! You're on the right track. Keep practicing to improve your understanding."
+    },
+    {
+      "step": "user",
+      "input": "How accurate is my reconstruction?",
+      "response": "Great! You're on the right track. Keep practicing to improve your understanding."
+    }
+  ]
+}
