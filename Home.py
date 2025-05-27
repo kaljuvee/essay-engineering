@@ -4,19 +4,24 @@ import os
 
 # Allow user to select API endpoint or use environment variable
 API_OPTIONS = [
-    "http://localhost:8001/chat",
-    "https://essay-engineering.onrender.com/chat"
+    "https://essay-engineering.onrender.com/chat",
+    "http://localhost:8001/chat"
 ]
 def get_api_url():
     return os.environ.get("ESSAY_ENGINEERING_API_URL") or st.session_state.get("api_url") or API_OPTIONS[0]
 
-st.title("Essay Writing Tutor (API Mode)")
-
-# API endpoint selection
+# Move API endpoint selection to sidebar
+st.sidebar.title("Settings")
 if "api_url" not in st.session_state:
     st.session_state.api_url = API_OPTIONS[0]
-api_url = st.selectbox("Select API Endpoint", API_OPTIONS, index=API_OPTIONS.index(st.session_state.api_url) if st.session_state.api_url in API_OPTIONS else 0)
+api_url = st.sidebar.selectbox(
+    "Select API Endpoint",
+    API_OPTIONS,
+    index=API_OPTIONS.index(st.session_state.api_url) if st.session_state.api_url in API_OPTIONS else 0
+)
 st.session_state.api_url = api_url
+
+st.title("Essay Writing Tutor (API Mode)")
 
 # Initialize session state for chat history
 if "messages" not in st.session_state:
