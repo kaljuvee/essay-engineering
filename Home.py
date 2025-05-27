@@ -21,7 +21,7 @@ api_url = st.sidebar.selectbox(
 )
 st.session_state.api_url = api_url
 
-st.title("Essay Writing Tutor (API Mode)")
+st.title("Essay Engineering")
 
 # Initialize session state for chat history
 if "messages" not in st.session_state:
