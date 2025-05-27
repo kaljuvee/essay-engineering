@@ -140,7 +140,7 @@ class EssayAgent:
         """
         if not messages:
             raise Exception("Messages list cannot be empty")
-            
+        print(f"[DEBUG] get_response called with messages: {messages}")
         try:
             # Initialize state
             initial_state = EssayState(
@@ -149,14 +149,21 @@ class EssayAgent:
                 reconstruction_versions=[],
                 accuracy_scores=[]
             )
-            
+            print(f"[DEBUG] Initial state: {initial_state}")
             # Run the graph
             for state in self.graph.stream(initial_state):
-                if "reconstruction_versions" in state and state["reconstruction_versions"]:
-                    latest_reconstruction = state["reconstruction_versions"][-1]
+                print(f"[DEBUG] State from graph: {state}")
+                node_state = list(state.values())[0] if state else {}
+                if "reconstruction_versions" in node_state and node_state["reconstruction_versions"]:
+                    latest_reconstruction = node_state["reconstruction_versions"][-1]
+                    print(f"[DEBUG] Yielding: {latest_reconstruction}")
                     yield latest_reconstruction + " "
-                    
+                elif "current_meaning_block" in node_state and node_state["current_meaning_block"]:
+                    print(f"[DEBUG] Yielding current_meaning_block: {node_state['current_meaning_block']}")
+                    yield node_state["current_meaning_block"] + " "
+            print("[DEBUG] get_response finished streaming.")
         except Exception as e:
+            print(f"[DEBUG] Exception in get_response: {e}")
             raise Exception(f"Graph execution error: {str(e)}")
 
     def reset_memory(self):
