@@ -8,3 +8,4 @@ pydantic>=2.0.0
 uvicorn>=0.34.0
 fastapi
 PyPDF2>=3.0.0
+streamlit>=1.35.0
