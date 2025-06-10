@@ -28,37 +28,56 @@ class EssayAgent:
         """Initialize the essay agent."""
         self.model = os.getenv("OPENAI_MODEL", "gpt-4o")
         self.llm = ChatOpenAI(model=self.model, temperature=0.7)
-        self.default_system_prompt = """You are an essay writing tutor. Help students improve their writing by identifying meaning blocks, reconstructing meaning, and providing feedback."""
+        self.default_system_prompt = """You are an essay writing tutor helping students learn to identify meaning blocks and reconstruct meaning. Your role is to guide students through the process by asking questions and providing feedback, rather than doing the work for them. When a student shares their attempt at identifying meaning blocks or reconstructing meaning:
+1. First acknowledge their effort
+2. Ask probing questions to help them think deeper
+3. Provide specific feedback on what they did well and what could be improved
+4. Guide them to discover the answers themselves rather than giving them directly
+5. Encourage them to explain their reasoning
+6. If they're struggling, provide hints rather than complete answers"""
         self.tools = self._create_tools()
         self.graph = self._create_graph()
         self.memory = MemorySaver()
     
     def _create_tools(self) -> List[Any]:
         """Create tools for the agent."""
-        def identify_meaning_blocks(text: str) -> str:
-            """Identify meaning blocks in a given text."""
-            return "Great! You've identified the meaning blocks correctly. Here they are:\n1. 'The Mole had been working very hard'\n2. 'all the morning'\n3. 'spring-cleaning his little home'\n\nNow, let's reconstruct the meaning of each block."
+        def evaluate_meaning_blocks(student_blocks: str, original_text: str) -> str:
+            """Evaluate student's identified meaning blocks and provide feedback."""
+            # This would be replaced with actual evaluation logic
+            return "I see you've identified some meaning blocks. Could you explain why you chose to break the text this way? What makes each of these blocks meaningful?"
 
-        def evaluate_accuracy(reconstruction: str, original: str) -> float:
-            """Evaluate the accuracy of a meaning reconstruction and return a numeric score (0.0 to 1.0)."""
-            # Simulate accuracy evaluation (replace with actual logic)
-            return 0.8  # Example: 80% accuracy
+        def evaluate_reconstruction(student_reconstruction: str, original_block: str) -> str:
+            """Evaluate student's meaning reconstruction and provide feedback."""
+            # This would be replaced with actual evaluation logic
+            return "Thank you for sharing your reconstruction. What aspects of the original text did you focus on in your interpretation? How does your reconstruction capture the key elements?"
 
-        def compare_versions(versions: List[str]) -> str:
-            """Compare different versions of meaning reconstruction."""
-            return "The versions are similar, but the second version emphasizes the seasonal aspect of spring-cleaning."
+        def provide_hints(original_text: str) -> str:
+            """Provide hints to help students identify meaning blocks."""
+            return "When looking for meaning blocks, consider: What are the main actions or events? Who is doing what? When is it happening? Try breaking the text into these elements."
 
         return [
-            Tool.from_function(identify_meaning_blocks, name="identify_meaning_blocks", description="Identify meaning blocks in a given text."),
-            StructuredTool.from_function(evaluate_accuracy, name="evaluate_accuracy", description="Evaluate the accuracy of a meaning reconstruction and return a numeric score (0.0 to 1.0)."),
-            Tool.from_function(compare_versions, name="compare_versions", description="Compare different versions of meaning reconstruction.")
+            StructuredTool.from_function(
+                evaluate_meaning_blocks,
+                name="evaluate_meaning_blocks",
+                description="Evaluate student's identified meaning blocks and provide feedback."
+            ),
+            StructuredTool.from_function(
+                evaluate_reconstruction,
+                name="evaluate_reconstruction",
+                description="Evaluate student's meaning reconstruction and provide feedback."
+            ),
+            StructuredTool.from_function(
+                provide_hints,
+                name="provide_hints",
+                description="Provide hints to help students identify meaning blocks."
+            )
         ]
     
     def _create_graph(self) -> StateGraph:
         """Create the LangGraph workflow."""
         # Define the nodes
         def process_input(state: EssayState) -> EssayState:
-            """Process the input and identify meaning blocks."""
+            """Process student input and provide feedback."""
             messages = state["messages"]
             if not messages:
                 return state
@@ -66,46 +85,42 @@ class EssayAgent:
             # Get the latest message
             latest_message = messages[-1]["content"]
             
-            # Use the identify_meaning_blocks tool
-            result = self.tools[0].invoke({"text": latest_message})
+            # Check if this is a meaning block identification or reconstruction
+            if "meaning blocks" in latest_message.lower():
+                # Use the evaluate_meaning_blocks tool
+                result = self.tools[0].invoke({
+                    "student_blocks": latest_message,
+                    "original_text": "The Mole had been working very hard all the morning, spring-cleaning his little home."
+                })
+            elif "reconstruction" in latest_message.lower():
+                # Use the evaluate_reconstruction tool
+                result = self.tools[1].invoke({
+                    "student_reconstruction": latest_message,
+                    "original_block": "The Mole had been working very hard all the morning, spring-cleaning his little home."
+                })
+            else:
+                # Default to evaluating meaning blocks
+                result = self.tools[0].invoke({
+                    "student_blocks": latest_message,
+                    "original_text": "The Mole had been working very hard all the morning, spring-cleaning his little home."
+                })
             
-            # Update state with identified meaning blocks
+            # Update state with feedback
             state["current_meaning_block"] = result
             return state
 
-        def generate_reconstruction(state: EssayState) -> EssayState:
-            """Generate a meaning reconstruction."""
+        def provide_guidance(state: EssayState) -> EssayState:
+            """Provide additional guidance if needed."""
             if not state["current_meaning_block"]:
                 return state
             
-            # Create prompt for reconstruction
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", self.default_system_prompt),
-                ("human", "Please reconstruct the meaning of this block: {block}")
-            ])
+            # Check if student might need hints
+            if "help" in state["current_meaning_block"].lower() or "hint" in state["current_meaning_block"].lower():
+                result = self.tools[2].invoke({
+                    "original_text": "The Mole had been working very hard all the morning, spring-cleaning his little home."
+                })
+                state["current_meaning_block"] = result
             
-            # Generate reconstruction
-            chain = prompt | self.llm | StrOutputParser()
-            reconstruction = chain.invoke({"block": state["current_meaning_block"]})
-            
-            # Add to versions
-            state["reconstruction_versions"].append(reconstruction)
-            return state
-
-        def evaluate_reconstruction(state: EssayState) -> EssayState:
-            """Evaluate the latest reconstruction."""
-            if not state["reconstruction_versions"]:
-                return state
-            
-            # Use the evaluate_accuracy tool
-            latest_reconstruction = state["reconstruction_versions"][-1]
-            result = self.tools[1].invoke({
-                "reconstruction": latest_reconstruction,
-                "original": state["current_meaning_block"]
-            })
-            
-            # Update accuracy scores
-            state["accuracy_scores"].append(result)  # result is already a float
             return state
 
         # Create the graph
@@ -113,14 +128,12 @@ class EssayAgent:
         
         # Add nodes
         workflow.add_node("process_input", process_input)
-        workflow.add_node("generate_reconstruction", generate_reconstruction)
-        workflow.add_node("evaluate_reconstruction", evaluate_reconstruction)
+        workflow.add_node("provide_guidance", provide_guidance)
         
         # Add edges
         workflow.add_edge(START, "process_input")
-        workflow.add_edge("process_input", "generate_reconstruction")
-        workflow.add_edge("generate_reconstruction", "evaluate_reconstruction")
-        workflow.add_edge("evaluate_reconstruction", END)
+        workflow.add_edge("process_input", "provide_guidance")
+        workflow.add_edge("provide_guidance", END)
         
         # Set entry point
         workflow.set_entry_point("process_input")
