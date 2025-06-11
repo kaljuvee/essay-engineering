@@ -1,17 +1,24 @@
 import json
 import os
+import sys
 from datetime import datetime
+
+# Add the project root directory to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from agent.essay_agent import EssayAgent
 
 def save_conversation(conversation_data: dict, filename: str):
     """Save conversation data to a JSON file."""
-    os.makedirs("data", exist_ok=True)
-    filepath = os.path.join("data", filename)
+    os.makedirs("test-data", exist_ok=True)
+    filepath = os.path.join("test-data", filename)
     with open(filepath, "w") as f:
         json.dump(conversation_data, f, indent=2)
 
-def test_meaning_reconstruction():
-    """Test the meaning reconstruction process."""
+def run_tests():
+    """Run all tests and save results."""
+    print("Starting test suite...")
+    
     # Initialize the essay agent
     agent = EssayAgent()
     print(f"Using model: {agent.model}")
@@ -30,10 +37,6 @@ def test_meaning_reconstruction():
     
     # Generate timestamp for filenames
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    print("\n" + "="*50)
-    print("Testing Meaning Reconstruction")
-    print("="*50)
     
     try:
         # Test 1: Initial meaning block identification
@@ -75,234 +78,15 @@ def test_meaning_reconstruction():
             "response": evaluation
         })
         
-        # Test 4: Iterative improvement
-        print("\nTest 4: Iterative Improvement")
-        messages = [{"role": "user", "content": f"Based on the evaluation, please improve this reconstruction: {response}"}]
-        improved_response = "Here's an improved version:\n'The Mole was exerting significant effort throughout the morning, thoroughly cleaning his small dwelling in preparation for spring.'\n\nGreat job! You're improving your understanding of the text."
-        print("\nImproved Response:")
-        print(improved_response)
-        
-        conversation_data["interactions"].append({
-            "step": "iterative_improvement",
-            "input": response,
-            "response": improved_response
-        })
-        
         # Save conversation data
-        save_conversation(conversation_data, f"conversation_{timestamp}.json")
+        save_conversation(conversation_data, f"test_results_{timestamp}.json")
+        print(f"\nTest results saved to test-data/test_results_{timestamp}.json")
         
     except Exception as e:
         print(f"\nError: {str(e)}")
         conversation_data["error"] = str(e)
-        save_conversation(conversation_data, f"error_conversation_{timestamp}.json")
-
-def test_conversation_flow():
-    """Test a complete conversation flow with multiple iterations."""
-    agent = EssayAgent()
-    
-    conversation_data = {
-        "timestamp": datetime.now().isoformat(),
-        "model": agent.model,
-        "interactions": []
-    }
-    
-    # Generate timestamp for filenames
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    # Sample conversation flow
-    conversation_steps = [
-        {
-            "role": "user",
-            "content": "Let's work on understanding this text: 'The Mole had been working very hard all the morning, spring-cleaning his little home.'"
-        },
-        {
-            "role": "assistant",
-            "content": "I'll help you break this down into meaning blocks and reconstruct the meaning."
-        },
-        {
-            "role": "user",
-            "content": "What are the meaning blocks in this sentence?"
-        },
-        {
-            "role": "user",
-            "content": "Now, let's reconstruct the first meaning block."
-        },
-        {
-            "role": "user",
-            "content": "How accurate is my reconstruction?"
-        }
-    ]
-    
-    try:
-        for step in conversation_steps:
-            print(f"\nStep: {step['content'][:50]}...")
-            response = "Great! You're on the right track. Keep practicing to improve your understanding."
-            print(f"Response: {response[:100]}...")
-            
-            conversation_data["interactions"].append({
-                "step": step["role"],
-                "input": step["content"],
-                "response": response
-            })
-        
-        # Save conversation data
-        save_conversation(conversation_data, f"conversation_flow_{timestamp}.json")
-        
-    except Exception as e:
-        print(f"\nError: {str(e)}")
-        conversation_data["error"] = str(e)
-        save_conversation(conversation_data, f"error_conversation_flow_{timestamp}.json")
-
-def test_correct_response():
-    """Test the agent's response for a correct answer."""
-    agent = EssayAgent()
-    print(f"Using model: {agent.model}")
-    
-    # Sample text for meaning reconstruction
-    sample_text = """
-    The Mole had been working very hard all the morning, spring-cleaning his little home.
-    """
-    
-    # Initialize conversation data
-    conversation_data = {
-        "timestamp": datetime.now().isoformat(),
-        "model": agent.model,
-        "interactions": []
-    }
-    
-    # Generate timestamp for filenames
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    print("\n" + "="*50)
-    print("Testing Correct Response")
-    print("="*50)
-    
-    try:
-        # Test for correct response
-        print("\nTest: Correct Response")
-        messages = [{"role": "user", "content": f"Please identify the meaning blocks in this text: {sample_text}"}]
-        response = "Great! You've identified the meaning blocks correctly. Here they are:\n1. 'The Mole had been working very hard'\n2. 'all the morning'\n3. 'spring-cleaning his little home'\n\nNow, let's reconstruct the meaning of each block."
-        print("\nResponse:")
-        print(response)
-        
-        conversation_data["interactions"].append({
-            "step": "correct_response",
-            "input": sample_text,
-            "response": response
-        })
-        
-        # Save conversation data
-        save_conversation(conversation_data, f"correct_response_{timestamp}.json")
-        
-    except Exception as e:
-        print(f"\nError: {str(e)}")
-        conversation_data["error"] = str(e)
-        save_conversation(conversation_data, f"error_correct_response_{timestamp}.json")
-
-def test_partially_correct_response():
-    """Test the agent's response for a partially correct answer."""
-    agent = EssayAgent()
-    print(f"Using model: {agent.model}")
-    
-    # Sample text for meaning reconstruction
-    sample_text = """
-    The Mole had been working very hard all the morning, spring-cleaning his little home.
-    """
-    
-    # Initialize conversation data
-    conversation_data = {
-        "timestamp": datetime.now().isoformat(),
-        "model": agent.model,
-        "interactions": []
-    }
-    
-    # Generate timestamp for filenames
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    print("\n" + "="*50)
-    print("Testing Partially Correct Response")
-    print("="*50)
-    
-    try:
-        # Test for partially correct response
-        print("\nTest: Partially Correct Response")
-        messages = [{"role": "user", "content": f"Please identify the meaning blocks in this text: {sample_text}"}]
-        response = "You've identified some meaning blocks correctly, but you missed a few. Here are the correct blocks:\n1. 'The Mole had been working very hard'\n2. 'all the morning'\n3. 'spring-cleaning his little home'\n\nKeep practicing to improve your understanding!"
-        print("\nResponse:")
-        print(response)
-        
-        conversation_data["interactions"].append({
-            "step": "partially_correct_response",
-            "input": sample_text,
-            "response": response
-        })
-        
-        # Save conversation data
-        save_conversation(conversation_data, f"partially_correct_response_{timestamp}.json")
-        
-    except Exception as e:
-        print(f"\nError: {str(e)}")
-        conversation_data["error"] = str(e)
-        save_conversation(conversation_data, f"error_partially_correct_response_{timestamp}.json")
-
-def test_wrong_response():
-    """Test the agent's response for a wrong answer."""
-    agent = EssayAgent()
-    print(f"Using model: {agent.model}")
-    
-    # Sample text for meaning reconstruction
-    sample_text = """
-    The Mole had been working very hard all the morning, spring-cleaning his little home.
-    """
-    
-    # Initialize conversation data
-    conversation_data = {
-        "timestamp": datetime.now().isoformat(),
-        "model": agent.model,
-        "interactions": []
-    }
-    
-    # Generate timestamp for filenames
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    print("\n" + "="*50)
-    print("Testing Wrong Response")
-    print("="*50)
-    
-    try:
-        # Test for wrong response
-        print("\nTest: Wrong Response")
-        messages = [{"role": "user", "content": f"Please identify the meaning blocks in this text: {sample_text}"}]
-        response = "Your identification of meaning blocks is incorrect. Here are the correct blocks:\n1. 'The Mole had been working very hard'\n2. 'all the morning'\n3. 'spring-cleaning his little home'\n\nPlease review the text and try again."
-        print("\nResponse:")
-        print(response)
-        
-        conversation_data["interactions"].append({
-            "step": "wrong_response",
-            "input": sample_text,
-            "response": response
-        })
-        
-        # Save conversation data
-        save_conversation(conversation_data, f"wrong_response_{timestamp}.json")
-        
-    except Exception as e:
-        print(f"\nError: {str(e)}")
-        conversation_data["error"] = str(e)
-        save_conversation(conversation_data, f"error_wrong_response_{timestamp}.json")
+        save_conversation(conversation_data, f"error_test_results_{timestamp}.json")
+        print(f"Error results saved to test-data/error_test_results_{timestamp}.json")
 
 if __name__ == "__main__":
-    print("Running Meaning Reconstruction Tests...")
-    test_meaning_reconstruction()
-    
-    print("\nRunning Conversation Flow Tests...")
-    test_conversation_flow()
-    
-    print("\nRunning Correct Response Tests...")
-    test_correct_response()
-    
-    print("\nRunning Partially Correct Response Tests...")
-    test_partially_correct_response()
-    
-    print("\nRunning Wrong Response Tests...")
-    test_wrong_response() 
+    run_tests() 

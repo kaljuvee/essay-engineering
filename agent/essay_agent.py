@@ -26,18 +26,21 @@ class EssayAgent:
     
     def __init__(self):
         """Initialize the essay agent."""
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4o")
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
         self.llm = ChatOpenAI(model=self.model, temperature=0.7)
-        self.default_system_prompt = """You are an essay writing tutor helping students learn to identify meaning blocks and reconstruct meaning. Your role is to guide students through the process by asking questions and providing feedback, rather than doing the work for them. When a student shares their attempt at identifying meaning blocks or reconstructing meaning:
-1. First acknowledge their effort
-2. Ask probing questions to help them think deeper
-3. Provide specific feedback on what they did well and what could be improved
-4. Guide them to discover the answers themselves rather than giving them directly
-5. Encourage them to explain their reasoning
-6. If they're struggling, provide hints rather than complete answers"""
+        self.system_prompt = self._load_system_prompt()
         self.tools = self._create_tools()
         self.graph = self._create_graph()
         self.memory = MemorySaver()
+    
+    def _load_system_prompt(self) -> str:
+        """Load the system prompt from file."""
+        prompt_path = os.path.join("prompts", "system_prompt.md")
+        try:
+            with open(prompt_path, "r") as f:
+                return f.read().strip()
+        except FileNotFoundError:
+            raise Exception(f"System prompt file not found at {prompt_path}")
     
     def _create_tools(self) -> List[Any]:
         """Create tools for the agent."""
