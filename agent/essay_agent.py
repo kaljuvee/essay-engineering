@@ -20,6 +20,12 @@ class EssayState(TypedDict):
     current_meaning_block: str
     reconstruction_versions: List[str]
     accuracy_scores: List[float]
+    original_text: str
+    current_version: int
+    is_new_student: bool
+    current_step: str  # 'intro', 'meaning_blocks', 'reconstruction', 'feedback'
+    student_meaning_blocks: str
+    confirmed_meaning_blocks: str
 
 class EssayAgent:
     """Agent for essay writing assistance."""
@@ -46,17 +52,106 @@ class EssayAgent:
         """Create tools for the agent."""
         def evaluate_meaning_blocks(student_blocks: str, original_text: str) -> str:
             """Evaluate student's identified meaning blocks and provide feedback."""
-            # This would be replaced with actual evaluation logic
-            return "I see you've identified some meaning blocks. Could you explain why you chose to break the text this way? What makes each of these blocks meaningful?"
+            # Check if student is new or unsure
+            if "have you used" in student_blocks.lower() or "i don't know" in student_blocks.lower():
+                return f"""Welcome! Let me explain the Essay Engineering method.
+
+We'll work with this sentence:
+"{original_text}"
+
+Let's begin with Step 1: Break it into meaning blocks.
+
+Can you tell me:
+1. How many different meaning blocks do you think there are in this sentence?
+2. Where would you put the parentheses to separate them?
+
+Just give me your division into meaning blocks first. Once we confirm that, we'll move on to version 1 (v1) of your meaning reconstruction."""
+            
+            # Check if student has provided meaning blocks
+            if "(" in student_blocks and ")" in student_blocks:
+                # Analyze the meaning blocks
+                blocks = student_blocks.strip("()").split(")(")
+                
+                # Check if blocks form a complete sentence
+                if len(blocks) > 1:
+                    return f"""Thanks — that's a good start. Let's refine the division based on the core principle of the Essay Engineering method: semantic grouping — what ideas belong together in terms of meaning.
+
+Here's how we can analyze it:
+
+Original Sentence:
+"{original_text}"
+
+Let's apply the main rule: when different phrases all contribute to a single general idea or action, they stay in the same meaning block.
+
+In this case, the whole sentence expresses a single action and its context. Everything supports the central idea of what the Mole was doing.
+
+Correct Meaning Block:
+({original_text})
+
+Now that we've locked in the meaning block, you're ready to write version 1 (v1) of your meaning reconstruction — just remember:
+
+Don't repeat any words from the original sentence (except names of people or places).
+
+It's fine if it's not perfect — just aim to capture some part of the meaning in your own words.
+
+Go ahead and give me your v1!"""
+                else:
+                    return "Good! You've identified a single meaning block. Now, let's move on to reconstructing its meaning. Give me your v1!"
+            
+            return """When looking for meaning blocks, consider:
+1. What is the main action or event?
+2. Who is involved?
+3. When does it happen?
+4. Why or how is it happening?
+
+Try breaking the text into these elements. For example, in the sentence:
+"The Mole had been working very hard all the morning, spring-cleaning his little home."
+
+You might identify blocks like:
+(The Mole had been working very hard) (all the morning) (spring-cleaning his little home)
+
+Give it a try with the current sentence!"""
 
         def evaluate_reconstruction(student_reconstruction: str, original_block: str) -> str:
             """Evaluate student's meaning reconstruction and provide feedback."""
-            # This would be replaced with actual evaluation logic
-            return "Thank you for sharing your reconstruction. What aspects of the original text did you focus on in your interpretation? How does your reconstruction capture the key elements?"
+            # Check for repeated words
+            original_words = set(original_block.lower().split())
+            student_words = set(student_reconstruction.lower().split())
+            repeated_words = original_words.intersection(student_words)
+            
+            if repeated_words:
+                return f"I notice you've used some words from the original text: {', '.join(repeated_words)}. Try to express the meaning without repeating any words from the original."
+            
+            # Calculate accuracy (this would be more sophisticated in practice)
+            accuracy = 70  # Placeholder for actual accuracy calculation
+            
+            feedback = f"Your reconstruction is about {accuracy}% accurate. "
+            if accuracy < 30:
+                feedback += "You're on the right track, but try to capture more of the original meaning."
+            elif accuracy < 60:
+                feedback += "Good effort! You're getting closer to the core meaning."
+            elif accuracy < 90:
+                feedback += "Very good! You've captured most of the meaning. Can you refine it further?"
+            else:
+                feedback += "Excellent! You've captured the meaning very well."
+            
+            return feedback
 
         def provide_hints(original_text: str) -> str:
             """Provide hints to help students identify meaning blocks."""
-            return "When looking for meaning blocks, consider: What are the main actions or events? Who is doing what? When is it happening? Try breaking the text into these elements."
+            return """When looking for meaning blocks, consider:
+1. What is the main action or event?
+2. Who is involved?
+3. When does it happen?
+4. Why or how is it happening?
+
+Try breaking the text into these elements. For example, in the sentence:
+"The Mole had been working very hard all the morning, spring-cleaning his little home."
+
+You might identify blocks like:
+(The Mole had been working very hard) (all the morning) (spring-cleaning his little home)
+
+Give it a try with the current sentence!"""
 
         return [
             StructuredTool.from_function(
@@ -88,27 +183,44 @@ class EssayAgent:
             # Get the latest message
             latest_message = messages[-1]["content"]
             
-            # Check if this is a meaning block identification or reconstruction
-            if "meaning blocks" in latest_message.lower():
-                # Use the evaluate_meaning_blocks tool
+            # Check if this is a new student or unsure
+            if state["is_new_student"] or "i don't know" in latest_message.lower():
+                state["is_new_student"] = False
+                state["current_step"] = "intro"
                 result = self.tools[0].invoke({
                     "student_blocks": latest_message,
-                    "original_text": "The Mole had been working very hard all the morning, spring-cleaning his little home."
+                    "original_text": state["original_text"]
                 })
-            elif "reconstruction" in latest_message.lower():
-                # Use the evaluate_reconstruction tool
+                state["current_meaning_block"] = result
+                return state
+            
+            # Check if this is a meaning block identification
+            if "(" in latest_message and ")" in latest_message:
+                state["current_step"] = "meaning_blocks"
+                state["student_meaning_blocks"] = latest_message
+                result = self.tools[0].invoke({
+                    "student_blocks": latest_message,
+                    "original_text": state["original_text"]
+                })
+                state["current_meaning_block"] = result
+                return state
+            
+            # Check if this is a reconstruction attempt
+            if "v" in latest_message.lower() or any(str(i) in latest_message for i in range(1, 10)):
+                state["current_step"] = "reconstruction"
+                state["current_version"] += 1
                 result = self.tools[1].invoke({
                     "student_reconstruction": latest_message,
-                    "original_block": "The Mole had been working very hard all the morning, spring-cleaning his little home."
+                    "original_block": state["original_text"]
                 })
-            else:
-                # Default to evaluating meaning blocks
-                result = self.tools[0].invoke({
-                    "student_blocks": latest_message,
-                    "original_text": "The Mole had been working very hard all the morning, spring-cleaning his little home."
-                })
+                state["reconstruction_versions"].append(latest_message)
+                state["current_meaning_block"] = result
+                return state
             
-            # Update state with feedback
+            # Default to providing hints
+            result = self.tools[2].invoke({
+                "original_text": state["original_text"]
+            })
             state["current_meaning_block"] = result
             return state
 
@@ -120,7 +232,7 @@ class EssayAgent:
             # Check if student might need hints
             if "help" in state["current_meaning_block"].lower() or "hint" in state["current_meaning_block"].lower():
                 result = self.tools[2].invoke({
-                    "original_text": "The Mole had been working very hard all the morning, spring-cleaning his little home."
+                    "original_text": state["original_text"]
                 })
                 state["current_meaning_block"] = result
             
@@ -158,25 +270,48 @@ class EssayAgent:
             raise Exception("Messages list cannot be empty")
         print(f"[DEBUG] get_response called with messages: {messages}")
         try:
+            # Extract original text from first message if it contains a quote
+            original_text = ""
+            for msg in messages:
+                if '"' in msg["content"]:
+                    # Extract text between quotes
+                    start = msg["content"].find('"') + 1
+                    end = msg["content"].rfind('"')
+                    if start > 0 and end > start:
+                        original_text = msg["content"][start:end]
+                        break
+            
             # Initialize state
             initial_state = EssayState(
                 messages=messages,
                 current_meaning_block="",
                 reconstruction_versions=[],
-                accuracy_scores=[]
+                accuracy_scores=[],
+                original_text=original_text,
+                current_version=0,
+                is_new_student=True,
+                current_step="intro",
+                student_meaning_blocks="",
+                confirmed_meaning_blocks=""
             )
             print(f"[DEBUG] Initial state: {initial_state}")
+            
             # Run the graph
             for state in self.graph.stream(initial_state):
                 print(f"[DEBUG] State from graph: {state}")
                 node_state = list(state.values())[0] if state else {}
+                
+                # Yield reconstruction versions if available
                 if "reconstruction_versions" in node_state and node_state["reconstruction_versions"]:
                     latest_reconstruction = node_state["reconstruction_versions"][-1]
                     print(f"[DEBUG] Yielding: {latest_reconstruction}")
                     yield latest_reconstruction + " "
+                
+                # Yield current meaning block if available
                 elif "current_meaning_block" in node_state and node_state["current_meaning_block"]:
                     print(f"[DEBUG] Yielding current_meaning_block: {node_state['current_meaning_block']}")
                     yield node_state["current_meaning_block"] + " "
+            
             print("[DEBUG] get_response finished streaming.")
         except Exception as e:
             print(f"[DEBUG] Exception in get_response: {e}")

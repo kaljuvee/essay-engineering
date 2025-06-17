@@ -37,13 +37,19 @@ st.session_state.api_url = api_url
 # Add Refresh button to clear conversation
 if st.sidebar.button("🔄 Refresh Conversation"):
     st.session_state.messages = []
+    st.session_state.current_step = "intro"
+    st.session_state.current_version = 0
     st.rerun()
 
 st.title("Essay Engineering")
 
-# Initialize session state for chat history
+# Initialize session state for chat history and conversation state
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "current_step" not in st.session_state:
+    st.session_state.current_step = "intro"
+if "current_version" not in st.session_state:
+    st.session_state.current_version = 0
 
 # Display chat messages
 for message in st.session_state.messages:
@@ -57,25 +63,23 @@ st.markdown("""
 **Meaning Blocks:**
 - Meaning blocks are the core ideas or phrases in a text that carry significant information.
 - Breaking down a text into meaning blocks helps you understand its structure and key points.
-- Example: In the sentence "The Mole had been working very hard all the morning, spring-cleaning his little home," you might identify meaning blocks by asking:
-  - Who is doing what?
-  - When is it happening?
-  - What specific action is being performed?
-
-**Reconstruction of Meaning:**
-- Reconstruction involves explaining each meaning block in your own words.
-- This process helps you internalize the text's nuances and improve your comprehension.
-- When reconstructing, consider:
+- When identifying meaning blocks, consider:
   - What is the main action or event?
   - Who is involved?
   - When does it happen?
   - Why or how is it happening?
 
+**Reconstruction of Meaning:**
+- Reconstruction involves explaining each meaning block in your own words.
+- This process helps you internalize the text's nuances and improve your comprehension.
+- You'll create multiple versions (v1, v2, v3, etc.) to improve your understanding.
+- Remember: Don't repeat words from the original text (except names of people or places).
+
 Try your hand at identifying meaning blocks and reconstructing their meaning using the practice text below.
 """)
 
 # Practice text
-practice_text = "The Mole had been working very hard all the morning, spring-cleaning his little home."
+practice_text = '"There was a touch of paternal contempt in it, even toward people he liked."'
 
 # Starting conversation buttons
 st.markdown("### Practice Exercise")
@@ -83,26 +87,43 @@ st.markdown(f"**Practice Text:** {practice_text}")
 
 col1, col2 = st.columns(2)
 with col1:
-    if st.button("Share Your Meaning Blocks"):
+    if st.button("Start Meaning Block Analysis"):
         st.markdown("""
-        Please identify the meaning blocks in the text above. Type your response in the chat below, 
-        breaking the text into meaningful parts and explaining why you chose these blocks.
+        Let's begin with Step 1: Break it into meaning blocks.
+        
+        Can you tell me:
+        1. How many different meaning blocks do you think there are in this sentence?
+        2. Where would you put the parentheses to separate them?
+        
+        Just give me your division into meaning blocks first. Once we confirm that, we'll move on to version 1 (v1) of your meaning reconstruction.
         """)
-        user_msg = {"role": "user", "content": f"I think the meaning blocks in '{practice_text}' are:"}
+        user_msg = {"role": "user", "content": "I don't know"}
         st.session_state.messages.append(user_msg)
         with st.chat_message("user"):
             st.markdown(user_msg["content"])
+        with st.chat_message("assistant"):
+            response = get_api_response(st.session_state.messages)
+            st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
 
 with col2:
-    if st.button("Share Your Reconstruction"):
+    if st.button("Start Reconstruction"):
         st.markdown("""
-        Please reconstruct the meaning of the text above. Type your response in the chat below, 
-        explaining what you think each part means in your own words.
+        Now that we've identified the meaning blocks, let's start reconstructing the meaning.
+        
+        Give me your version 1 (v1) of the meaning reconstruction. Remember:
+        - Don't repeat words from the original text
+        - It's fine if it's not perfect
+        - Just aim to capture some part of the meaning in your own words
         """)
-        user_msg = {"role": "user", "content": f"My reconstruction of '{practice_text}' is:"}
+        user_msg = {"role": "user", "content": "I'm ready to start my reconstruction"}
         st.session_state.messages.append(user_msg)
         with st.chat_message("user"):
             st.markdown(user_msg["content"])
+        with st.chat_message("assistant"):
+            response = get_api_response(st.session_state.messages)
+            st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
 
 # Chat input
 if prompt := st.chat_input("Share your meaning blocks or reconstruction, or ask for help"):
