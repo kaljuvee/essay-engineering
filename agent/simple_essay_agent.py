@@ -27,19 +27,36 @@ class SimpleEssayAgent:
         """Analyze a sentence and break it into meaning blocks."""
         self.current_sentence = sentence
         
-        # Simple heuristic: split on commas and conjunctions
-        parts = sentence.replace(",", " , ").replace("even", " even ").split()
-        blocks = []
-        current_block = []
-        
-        for part in parts:
-            current_block.append(part)
-            if part in [",", "even"]:
+        # Simple heuristic: split on parentheses
+        if "(" in sentence and ")" in sentence:
+            # Extract content between parentheses
+            blocks = []
+            start = 0
+            while True:
+                start = sentence.find("(", start)
+                if start == -1:
+                    break
+                end = sentence.find(")", start)
+                if end == -1:
+                    break
+                block_text = sentence[start+1:end].strip()
+                if block_text:
+                    blocks.append(block_text)
+                start = end + 1
+        else:
+            # Fallback: split on commas and conjunctions
+            parts = sentence.replace(",", " , ").replace("even", " even ").split()
+            blocks = []
+            current_block = []
+            
+            for part in parts:
+                current_block.append(part)
+                if part in [",", "even"]:
+                    blocks.append(" ".join(current_block).strip())
+                    current_block = []
+                    
+            if current_block:
                 blocks.append(" ".join(current_block).strip())
-                current_block = []
-                
-        if current_block:
-            blocks.append(" ".join(current_block).strip())
             
         # Create meaning blocks with simple explanations
         self.meaning_blocks = [
@@ -103,8 +120,8 @@ class SimpleEssayAgent:
         last_version = self.versions[-1]
         version_num = len(self.versions)
         
-        return f"Thanks for v{version_num}. Let's improve it. Think about:\n" + \
+        return f"Thanks for version {version_num}. Let's improve it. Think about:\n" + \
                "1. Is the emotional tone accurate?\n" + \
                "2. Are you capturing the subtle meaning?\n" + \
                "3. Are you avoiding repetition?\n" + \
-               f"Try v{version_num + 1}."
+               f"Try version {version_num + 1}."

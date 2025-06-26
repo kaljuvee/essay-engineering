@@ -1,0 +1,202 @@
+{
+  "test_run": {
+    "timestamp": "2025-06-26T16:03:56.104484",
+    "total_tests": 4,
+    "passed_tests": 1,
+    "failed_tests": 3
+  },
+  "results": [
+    {
+      "test_name": "Complete Essay Engineering Workflow",
+      "timestamp": "2025-06-26T16:03:56.103487",
+      "inputs": [
+        "There was a touch of paternal contempt in it, even toward people he liked.",
+        "(There was a touch of paternal contempt) (in it, even toward people he liked)",
+        "v1. it had a large piece evil sorrow, also about dogs and boys",
+        "v2. it even gave a major siren sound, and for women he hated",
+        "v3. it even had a little piece of monster man, also for acceptable girlfriends",
+        "v4. it even had a little bit of bossy professor, also for men and women he knew",
+        "v5. it even had a little bit of bossy anger, also for men and women he thought were good"
+      ],
+      "expected_behaviors": [
+        "analyze this sentence",
+        "meaning blocks",
+        "version 1",
+        "version 2",
+        "version 3",
+        "version 4",
+        "version 5"
+      ],
+      "actual_responses": [
+        "Great! Let's analyze this sentence: 'There was a touch of paternal contempt in it, even toward people he liked.'\n\nCan you break it into meaning blocks? Use parentheses to separate them, like: (block 1) (block 2)",
+        "Thanks for your meaning blocks! I see you've identified 3 blocks. Now try creating version 1 (v1) of your meaning reconstruction. Remember not to repeat words from the original.",
+        "Thanks for v1. Let's improve it. Think about:\n1. Is the emotional tone accurate?\n2. Are you capturing the subtle meaning?\n3. Are you avoiding repetition?\nTry v2.",
+        "Thanks for v2. Let's improve it. Think about:\n1. Is the emotional tone accurate?\n2. Are you capturing the subtle meaning?\n3. Are you avoiding repetition?\nTry v3.",
+        "Thanks for v3. Let's improve it. Think about:\n1. Is the emotional tone accurate?\n2. Are you capturing the subtle meaning?\n3. Are you avoiding repetition?\nTry v4.",
+        "Thanks for v4. Let's improve it. Think about:\n1. Is the emotional tone accurate?\n2. Are you capturing the subtle meaning?\n3. Are you avoiding repetition?\nTry v5.",
+        "Thanks for v5. Let's improve it. Think about:\n1. Is the emotional tone accurate?\n2. Are you capturing the subtle meaning?\n3. Are you avoiding repetition?\nTry v6."
+      ],
+      "agent_state": [
+        {
+          "current_sentence": "There was a touch of paternal contempt in it, even toward people he liked.",
+          "meaning_blocks_count": 0,
+          "versions_count": 0,
+          "conversation_length": 1
+        },
+        {
+          "current_sentence": "(There was a touch of paternal contempt) (in it, even toward people he liked)",
+          "meaning_blocks_count": 3,
+          "versions_count": 0,
+          "conversation_length": 2
+        },
+        {
+          "current_sentence": "(There was a touch of paternal contempt) (in it, even toward people he liked)",
+          "meaning_blocks_count": 3,
+          "versions_count": 1,
+          "conversation_length": 3
+        },
+        {
+          "current_sentence": "(There was a touch of paternal contempt) (in it, even toward people he liked)",
+          "meaning_blocks_count": 3,
+          "versions_count": 2,
+          "conversation_length": 4
+        },
+        {
+          "current_sentence": "(There was a touch of paternal contempt) (in it, even toward people he liked)",
+          "meaning_blocks_count": 3,
+          "versions_count": 3,
+          "conversation_length": 5
+        },
+        {
+          "current_sentence": "(There was a touch of paternal contempt) (in it, even toward people he liked)",
+          "meaning_blocks_count": 3,
+          "versions_count": 4,
+          "conversation_length": 6
+        },
+        {
+          "current_sentence": "(There was a touch of paternal contempt) (in it, even toward people he liked)",
+          "meaning_blocks_count": 3,
+          "versions_count": 5,
+          "conversation_length": 7
+        }
+      ],
+      "passed": false,
+      "notes": [
+        "Expected 'version 1' not found in response",
+        "Expected 'version 2' not found in response",
+        "Expected 'version 3' not found in response",
+        "Expected 'version 4' not found in response",
+        "Expected 'version 5' not found in response"
+      ]
+    },
+    {
+      "test_name": "Meaning Block Analysis Only",
+      "timestamp": "2025-06-26T16:03:56.104171",
+      "inputs": [
+        "The Mole had been working very hard all the morning, spring-cleaning his little home.",
+        "(The Mole had been working very hard) (all the morning) (spring-cleaning his little home)"
+      ],
+      "expected_behaviors": [
+        "analyze this sentence",
+        "meaning blocks"
+      ],
+      "actual_responses": [
+        "Great! Let's analyze this sentence: 'The Mole had been working very hard all the morning, spring-cleaning his little home.'\n\nCan you break it into meaning blocks? Use parentheses to separate them, like: (block 1) (block 2)",
+        "Thanks for your meaning blocks! I see you've identified 1 blocks. Now try creating version 1 (v1) of your meaning reconstruction. Remember not to repeat words from the original."
+      ],
+      "agent_state": [
+        {
+          "current_sentence": "The Mole had been working very hard all the morning, spring-cleaning his little home.",
+          "meaning_blocks_count": 0,
+          "versions_count": 0,
+          "conversation_length": 1
+        },
+        {
+          "current_sentence": "(The Mole had been working very hard) (all the morning) (spring-cleaning his little home)",
+          "meaning_blocks_count": 1,
+          "versions_count": 0,
+          "conversation_length": 2
+        }
+      ],
+      "passed": true,
+      "notes": []
+    },
+    {
+      "test_name": "Version Creation Without Meaning Blocks",
+      "timestamp": "2025-06-26T16:03:56.104235",
+      "inputs": [
+        "Hello, I want to create a version",
+        "v1. this is my first attempt"
+      ],
+      "expected_behaviors": [
+        "analyze this sentence",
+        "version 1"
+      ],
+      "actual_responses": [
+        "Great! Let's analyze this sentence: 'Hello, I want to create a version'\n\nCan you break it into meaning blocks? Use parentheses to separate them, like: (block 1) (block 2)",
+        "Let's analyze the meaning blocks in this sentence. How would you divide it?"
+      ],
+      "agent_state": [
+        {
+          "current_sentence": "Hello, I want to create a version",
+          "meaning_blocks_count": 0,
+          "versions_count": 0,
+          "conversation_length": 1
+        },
+        {
+          "current_sentence": "Hello, I want to create a version",
+          "meaning_blocks_count": 0,
+          "versions_count": 1,
+          "conversation_length": 2
+        }
+      ],
+      "passed": false,
+      "notes": [
+        "Expected 'version 1' not found in response"
+      ]
+    },
+    {
+      "test_name": "Evaluation Request",
+      "timestamp": "2025-06-26T16:03:56.104275",
+      "inputs": [
+        "Please evaluate my work",
+        "v1. my reconstruction attempt",
+        "evaluate this version"
+      ],
+      "expected_behaviors": [
+        "analyze this sentence",
+        "version 1",
+        "making progress"
+      ],
+      "actual_responses": [
+        "Great! Let's analyze this sentence: 'Please evaluate my work'\n\nCan you break it into meaning blocks? Use parentheses to separate them, like: (block 1) (block 2)",
+        "Let's analyze the meaning blocks in this sentence. How would you divide it?",
+        "Looking at v1. v1. my reconstruction attempt, I can see you're making progress. Let's continue improving. Try the next version!"
+      ],
+      "agent_state": [
+        {
+          "current_sentence": "Please evaluate my work",
+          "meaning_blocks_count": 0,
+          "versions_count": 0,
+          "conversation_length": 1
+        },
+        {
+          "current_sentence": "Please evaluate my work",
+          "meaning_blocks_count": 0,
+          "versions_count": 1,
+          "conversation_length": 2
+        },
+        {
+          "current_sentence": "Please evaluate my work",
+          "meaning_blocks_count": 0,
+          "versions_count": 1,
+          "conversation_length": 3
+        }
+      ],
+      "passed": false,
+      "notes": [
+        "Expected 'version 1' not found in response"
+      ]
+    }
+  ]
+}
