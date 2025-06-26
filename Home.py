@@ -88,16 +88,8 @@ st.markdown(f"**Practice Text:** {practice_text}")
 col1, col2 = st.columns(2)
 with col1:
     if st.button("Start Meaning Block Analysis"):
-        st.markdown("""
-        Let's begin with Step 1: Break it into meaning blocks.
-        
-        Can you tell me:
-        1. How many different meaning blocks do you think there are in this sentence?
-        2. Where would you put the parentheses to separate them?
-        
-        Just give me your division into meaning blocks first. Once we confirm that, we'll move on to version 1 (v1) of your meaning reconstruction.
-        """)
-        user_msg = {"role": "user", "content": "I don't know"}
+        # Send the practice text as the first message
+        user_msg = {"role": "user", "content": practice_text}
         st.session_state.messages.append(user_msg)
         with st.chat_message("user"):
             st.markdown(user_msg["content"])
@@ -108,14 +100,7 @@ with col1:
 
 with col2:
     if st.button("Start Reconstruction"):
-        st.markdown("""
-        Now that we've identified the meaning blocks, let's start reconstructing the meaning.
-        
-        Give me your version 1 (v1) of the meaning reconstruction. Remember:
-        - Don't repeat words from the original text
-        - It's fine if it's not perfect
-        - Just aim to capture some part of the meaning in your own words
-        """)
+        # Send a message indicating readiness for reconstruction
         user_msg = {"role": "user", "content": "I'm ready to start my reconstruction"}
         st.session_state.messages.append(user_msg)
         with st.chat_message("user"):
